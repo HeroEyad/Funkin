@@ -6,37 +6,169 @@ package funkin.util;
 @:nullSafety
 class MathUtil
 {
+  /** Euler's constant and the base of the natural logarithm. */
+  public static inline final E:Float = 2.71828182845904523536;
+
+  /** The ratio of a circle's circumference to its diameter. */
+  public static inline final PI:Float = 3.14159265358979323846;
+
+  /** Tau (2 * PI). Represents a full 360-degree rotation in radians. */
+  public static inline final TAU:Float = 6.28318530717958647692;
+
+  /** Half PI (PI / 2). Represents 90 degrees in radians. */
+  public static inline final HALF_PI:Float = 1.57079632679489661923;
+
+  /** Quarter PI (PI / 4). Represents 45 degrees in radians. */
+  public static inline final QUARTER_PI:Float = 0.78539816339744830962;
+
+  /** Multiplier to convert degrees to radians. */
+  public static inline final DEG2RAD:Float = PI / 180.0;
+
+  /** Multiplier to convert radians to degrees. */
+  public static inline final RAD2DEG:Float = 180.0 / PI;
+
+  /** The square root of 2. Useful for normalizing diagonal movement. */
+  public static inline final SQRT_2:Float = 1.41421356237309504880;
+
+  /** Half of the square root of 2 (or 1 / SQRT_2). */
+  public static inline final SQRT_1_2:Float = 0.70710678118654752440;
+
+  /** The Golden Ratio. Great for UI proportions and procedural generation. */
+  public static inline final GOLDEN_RATIO:Float = 1.61803398874989484820;
+
+  /** Machine Epsilon. A remarkably small number used for float comparisons. */
+  public static inline final EPSILON:Float = 0.0000001;
+
   /**
-   * Euler's constant and the base of the natural logarithm.
-   * Math.E is not a constant in Haxe, so we'll just define it ourselves.
+   * Safely compares two floats to see if they are practically equal, 
+   * bypassing floating-point rounding errors.
    */
-  public static final E:Float = 2.71828182845904523536;
+  public static inline function approximatelyEqual(a:Float, b:Float, epsilon:Float = EPSILON):Bool
+  {
+    return Math.abs(a - b) <= epsilon;
+  }
 
   /**
    * Get the logarithm of a value with a given base.
-   * @param base The base of the logarithm.
-   * @param value The value to get the logarithm of.
-   * @return `log_base(value)`
    */
-  public static function logBase(base:Float, value:Float):Float
+  public static inline function logBase(base:Float, value:Float):Float
   {
     return Math.log(value) / Math.log(base);
+  }
+
+  /**
+   * Get the base-2 exponent of a value.
+   */
+  public static inline function exp2(x:Float):Float
+  {
+    return Math.pow(2, x);
+  }
+
+  /**
+   * Euclidean division remainder (always positive).
+   */
+  public static inline function mod(a:Float, b:Float):Float
+  {
+    b = Math.abs(b);
+    return a - b * Math.floor(a / b);
+  }
+
+  /**
+   * Helper function to get the fractional part of a value.
+   */
+  public static inline function fract(x:Float):Float
+  {
+    return x - Math.floor(x);
+  }
+
+  /**
+   * Wraps a value around a range (like an angle wrapping between 0 and 360).
+   */
+  public static inline function wrap(value:Float, min:Float, max:Float):Float
+  {
+    return mod(value - min, max - min) + min;
+  }
+
+  /**
+   * Checks if an integer is a power of two (useful for texture generation).
+   */
+  public static inline function isPowerOfTwo(value:Int):Bool
+  {
+    return value > 0 && (value & (value - 1)) == 0;
+  }
+
+  /**
+   * Linear interpolation.
+   */
+  public static inline function lerp(base:Float, target:Float, alpha:Float):Float
+  {
+    return base + alpha * (target - base);
+  }
+
+  /**
+   * The inverse of Lerp. Determines where a value lies between two points (returns 0.0 to 1.0).
+   */
+  public static inline function inverseLerp(base:Float, target:Float, value:Float):Float
+  {
+    if (base == target) return 0.0;
+    return (value - base) / (target - base);
+  }
+
+  /**
+   * Maps a value from one range to another. 
+   */
+  public static inline function remap(value:Float, start1:Float, stop1:Float, start2:Float, stop2:Float):Float
+  {
+    return lerp(start2, stop2, inverseLerp(start1, stop1, value));
+  }
+
+  /**
+   * GLSL-style SmoothStep. Interpolates smoothly between two edges.
+   */
+  public static function smoothStep(edge0:Float, edge1:Float, x:Float):Float
+  {
+    var t:Float = FlxMath.bound((x - edge0) / (edge1 - edge0), 0.0, 1.0);
+    return t * t * (3.0 - 2.0 * t);
+  }
+
+  public static function smoothLerpDecay(base:Float, target:Float, deltaTime:Float, halfLife:Float):Float
+  {
+    if (deltaTime == 0) return base;
+    if (base == target) return target;
+    return lerp(target, base, exp2(-deltaTime / halfLife));
+  }
+
+  public static function smoothLerpPrecision(base:Float, target:Float, deltaTime:Float, duration:Float, precision:Float = 1 / 100):Float
+  {
+    if (deltaTime == 0) return base;
+    if (base == target) return target;
+    return lerp(target, base, Math.pow(precision, deltaTime / duration));
+  }
+
+  public static inline function snap(base:Float, target:Float, threshold:Float):Float
+  {
+    return Math.abs(base - target) <= threshold ? target : base;
   }
 
   public static function easeInOutCirc(x:Float):Float
   {
     if (x <= 0.0) return 0.0;
     if (x >= 1.0) return 1.0;
-    var result:Float = (x < 0.5) ? (1 - Math.sqrt(1 - 4 * x * x)) / 2 : (Math.sqrt(1 - 4 * (1 - x) * (1 - x)) + 1) / 2;
-    return Math.isNaN(result) ? 1.0 : result;
+    return (x < 0.5) 
+      ? (1 - Math.sqrt(1 - 4 * x * x)) / 2 
+      : (Math.sqrt(1 - 4 * (1 - x) * (1 - x)) + 1) / 2;
   }
 
   public static function easeInOutBack(x:Float, c:Float = 1.70158):Float
   {
     if (x <= 0.0) return 0.0;
     if (x >= 1.0) return 1.0;
-    var result:Float = (x < 0.5) ? (2 * x * x * ((c + 1) * 2 * x - c)) / 2 : (1 - 2 * (1 - x) * (1 - x) * ((c + 1) * 2 * (1 - x) - c)) / 2;
-    return Math.isNaN(result) ? 1.0 : result;
+    if (x < 0.5) {
+      return (2 * x * x * ((c + 1) * 2 * x - c)) / 2;
+    } else {
+      var invX:Float = 1 - x;
+      return (1 - 2 * invX * invX * ((c + 1) * 2 * invX - c)) / 2;
+    }
   }
 
   public static function easeInBack(x:Float, c:Float = 1.70158):Float
@@ -50,208 +182,56 @@ class MathUtil
   {
     if (x <= 0.0) return 0.0;
     if (x >= 1.0) return 1.0;
-    return 1 + (c + 1) * Math.pow(x - 1, 3) + c * Math.pow(x - 1, 2);
+    var invX:Float = x - 1;
+    return 1 + (c + 1) * (invX * invX * invX) + c * (invX * invX);
   }
 
   /**
-   * Get the base-2 exponent of a value.
-   * @param x value
-   * @return `2^x`
+   * GCD stands for Greatest Common Divisor.
+   * Optimized integer algorithm.
    */
-  public static function exp2(x:Float):Float
+  public static function gcd(m:Int, n:Int):Int
   {
-    return Math.pow(2, x);
+    m = m < 0 ? -m : m;
+    n = n < 0 ? -n : n;
+    
+    var temp:Int;
+    while (n != 0)
+    {
+      temp = m % n;
+      m = n;
+      n = temp;
+    }
+    return m;
   }
 
   /**
-   * Performs a modulo operation to calculate the remainder of `a` divided by `b`.
-   * 
-   * The definition of "remainder" varies by implementation;
-   * this one is similar to GLSL or Python in that it uses Euclidean division, which always returns positive,
-   * while Haxe's `%` operator uses signed truncated division.
-   * 
-   * For example, `-5 % 3` returns `-2` while `FlxMath.mod(-5, 3)` returns `1`.
-   * 
-   * @param a The dividend.
-   * @param b The divisor.
-   * @return `a mod b`.
+   * Least Common Multiple (LCM). Pairs with GCD.
    */
-  public static function mod(a:Float, b:Float):Float
+  public static inline function lcm(m:Int, n:Int):Int
   {
-    b = Math.abs(b);
-    return a - b * Math.floor(a / b);
+    if (m == 0 || n == 0) return 0;
+    return Std.int(Math.abs(m * n) / gcd(m, n));
   }
 
-  /**
-   * Helper function to get the fractional part of a value.
-   * @param x value
-   * @return `x mod 1`.
-   */
-  public static function fract(x:Float):Float
-  {
-    return x - Math.floor(x);
-  }
-
-  /**
-   * Linear interpolation.
-   *
-   * @param base The starting value, when `alpha = 0`.
-   * @param target The ending value, when `alpha = 1`.
-   * @param alpha The percentage of the interpolation from `base` to `target`. Forms a "line" intersecting the two.
-   *
-   * @return The interpolated value.
-   */
-  public static function lerp(base:Float, target:Float, alpha:Float):Float
-  {
-    if (alpha == 0) return base;
-    if (alpha == 1) return target;
-    return base + alpha * (target - base);
-  }
-
-  /**
-   * Exponential decay interpolation.
-   *
-   * Framerate-independent because the rate-of-change is proportional to the difference, so you can
-   * use the time elapsed since the last frame as `deltaTime` and the function will be consistent.
-   *
-   * Equivalent to `smoothLerpPrecision(base, target, deltaTime, halfLife, 0.5)`.
-   *
-   * @param base The starting or current value.
-   * @param target The value this function approaches.
-   * @param deltaTime The change in time along the function in seconds.
-   * @param halfLife Time in seconds to reach halfway to `target`.
-   *
-   * @see https://twitter.com/FreyaHolmer/status/1757918211679650262
-   *
-   * @return The interpolated value.
-   */
-  public static function smoothLerpDecay(base:Float, target:Float, deltaTime:Float, halfLife:Float):Float
-  {
-    if (deltaTime == 0) return base;
-    if (base == target) return target;
-    return lerp(target, base, exp2(-deltaTime / halfLife));
-  }
-
-  /**
-   * Exponential decay interpolation.
-   *
-   * Framerate-independent because the rate-of-change is proportional to the difference, so you can
-   * use the time elapsed since the last frame as `deltaTime` and the function will be consistent.
-   *
-   * Equivalent to `smoothLerpDecay(base, target, deltaTime, -duration / logBase(2, precision))`.
-   *
-   * @param base The starting or current value.
-   * @param target The value this function approaches.
-   * @param deltaTime The change in time along the function in seconds.
-   * @param duration Time in seconds to reach `target` within `precision`, relative to the original distance.
-   * @param precision Relative target precision of the interpolation. Defaults to 1% distance remaining.
-   *
-   * @see https://twitter.com/FreyaHolmer/status/1757918211679650262
-   *
-   * @return The interpolated value.
-   */
-  public static function smoothLerpPrecision(base:Float, target:Float, deltaTime:Float, duration:Float, precision:Float = 1 / 100):Float
-  {
-    if (deltaTime == 0) return base;
-    if (base == target) return target;
-    return lerp(target, base, Math.pow(precision, deltaTime / duration));
-  }
-
-  /**
-   * Snap a value to another if it's within a certain distance (inclusive).
-   *
-   * Helpful when using functions like `smoothLerpPrecision` to ensure the value actually reaches the target.
-   *
-   * @param base The base value to conditionally snap.
-   * @param target The target value to snap to.
-   * @param threshold Maximum distance between the two for snapping to occur.
-   *
-   * @return `target` if `base` is within `threshold` of it, otherwise `base`.
-   */
-  public static function snap(base:Float, target:Float, threshold:Float):Float
-  {
-    return Math.abs(base - target) <= threshold ? target : base;
-  }
-
-  /**
-   * Perform linear interpolation between the base and the target, based on the current framerate.
-   * @param base The starting value, when `progress <= 0`.
-   * @param target The ending value, when `progress >= 1`.
-   * @param ratio Value used to interpolate between `base` and `target`.
-   *
-   * @return The interpolated value.
-   */
   @:deprecated('Use smoothLerpPrecision instead')
-  public static function coolLerp(base:Float, target:Float, ratio:Float):Float
+  public static inline function coolLerp(base:Float, target:Float, ratio:Float):Float
   {
     return base + cameraLerp(ratio) * (target - base);
   }
 
-  /**
-   * Perform linear interpolation based on the current framerate.
-   * @param lerp Value used to interpolate between `base` and `target`.
-   *
-   * @return The interpolated value.
-   */
   @:deprecated('Use smoothLerpPrecision instead')
-  public static function cameraLerp(lerp:Float):Float
+  public static inline function cameraLerp(lerp:Float):Float
   {
     return lerp * (FlxG.elapsed / (1 / 60));
   }
 
-  /**
-   * Backwards compatibility for `smoothLerpPrecision`.
-   *
-   * Perform a framerate-independent linear interpolation between the base value and the target.
-   * @param current The current value.
-   * @param target The target value.
-   * @param elapsed The time elapsed since the last frame.
-   * @param duration The total duration of the interpolation. Nominal duration until remaining distance is less than `precision`.
-   * @param precision The target precision of the interpolation. Defaults to 1% of distance remaining.
-   * @see https://twitter.com/FreyaHolmer/status/1757918211679650262
-   *
-   * @return A value between the current value and the target value.
-   */
   @:deprecated('Use smoothLerpPrecision instead')
   public static function smoothLerp(current:Float, target:Float, elapsed:Float, duration:Float, precision:Float = 1 / 100):Float
   {
-    // An alternative algorithm which uses a separate half-life value:
-    // var halfLife:Float = -duration / logBase(2, precision);
-    // lerp(current, target, 1 - exp2(-elapsed / halfLife));
-
     if (current == target) return target;
-
     var result:Float = lerp(current, target, 1 - Math.pow(precision, elapsed / duration));
-
-    // TODO: Is there a better way to ensure a lerp which actually reaches the target?
-    // Research a framerate-independent PID lerp.
     if (Math.abs(result - target) < (precision * target)) result = target;
-
     return result;
-  }
-
-  /**
-   * GCD stands for Greatest Common Divisor
-   * It's used in FullScreenScaleMode to prevent weird window resolutions from being counted as wide screen since those were causing issues positioning the game
-   * It returns the greatest common divisor between m and n
-   *
-   * think it's from hxp..?
-   * @param m
-   * @param n
-   * @return Int the common divisor between m and n
-   */
-  public static function gcd(m:Int, n:Int):Int
-  {
-    m = Math.floor(Math.abs(m));
-    n = Math.floor(Math.abs(n));
-    var t;
-    do
-    {
-      if (n == 0) return m;
-      t = m;
-      m = n;
-      n = t % m;
-    }
-    while (true);
   }
 }
